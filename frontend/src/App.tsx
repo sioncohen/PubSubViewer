@@ -1,122 +1,106 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useEffect, useRef, useState } from 'react'
+import { fetchProject, fetchSubscriptions, fetchMessages } from './api'
+import type { PubSubMessage } from './types'
+import SubscriptionSelector from './components/SubscriptionSelector'
+import MessageList from './components/MessageList'
 
-function App() {
-  const [count, setCount] = useState(0)
+const MAX_MESSAGES = 200
+const POLL_INTERVAL = 2000
+
+export default function App() {
+  const [project, setProject] = useState('')
+  const [subscriptions, setSubscriptions] = useState<string[]>([])
+  const [selectedSubscription, setSelectedSubscription] = useState<string | null>(null)
+  const [messages, setMessages] = useState<PubSubMessage[]>([])
+  const [isPolling, setIsPolling] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const seenIds = useRef<Set<string>>(new Set())
+
+  useEffect(() => {
+    fetchProject()
+      .then(({ project }) => setProject(project))
+      .catch(err => setError(err.message))
+
+    fetchSubscriptions()
+      .then(({ subscriptions }) => setSubscriptions(subscriptions))
+      .catch(err => setError(err.message))
+  }, [])
+
+  function stopPolling() {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+    setIsPolling(false)
+  }
+
+  function startPolling() {
+    if (!selectedSubscription) return
+    setError(null)
+    setIsPolling(true)
+    intervalRef.current = setInterval(async () => {
+      try {
+        const { messages: incoming } = await fetchMessages(selectedSubscription)
+        const unique = incoming.filter(m => !seenIds.current.has(m.messageId))
+        unique.forEach(m => seenIds.current.add(m.messageId))
+        if (unique.length > 0) {
+          setMessages(prev => [...unique, ...prev].slice(0, MAX_MESSAGES))
+        }
+      } catch (err: any) {
+        setError(err.message)
+        stopPolling()
+      }
+    }, POLL_INTERVAL)
+  }
+
+  function handleSelectSubscription(sub: string) {
+    stopPolling()
+    setMessages([])
+    seenIds.current.clear()
+    setSelectedSubscription(sub)
+  }
+
+  function handleClear() {
+    setMessages([])
+    seenIds.current.clear()
+  }
+
+  const loadError = !project && !subscriptions.length && !!error
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="min-h-screen bg-gray-950 text-gray-100 p-6 max-w-4xl mx-auto">
+      <header className="mb-6">
+        <h1 className="text-2xl font-bold text-white">PubSub Viewer</h1>
+        {project && (
+          <p className="text-sm text-gray-400 mt-1">Project: {project}</p>
+        )}
+      </header>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+      {error && (
+        <div className="mb-4 bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded flex justify-between items-center">
+          <span>{error}</span>
+          <button
+            onClick={() => setError(null)}
+            className="text-red-300 hover:text-red-100 ml-4"
+          >
+            ✕
+          </button>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      )}
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <SubscriptionSelector
+        subscriptions={subscriptions}
+        selected={selectedSubscription}
+        isPolling={isPolling}
+        disabled={loadError}
+        onSelect={handleSelectSubscription}
+        onStart={startPolling}
+        onStop={stopPolling}
+      />
+
+      <MessageList messages={messages} onClear={handleClear} />
+    </div>
   )
 }
-
-export default App
