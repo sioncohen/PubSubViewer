@@ -1,10 +1,11 @@
-import { execSync } from 'child_process'
+import { execFileSync } from 'child_process'
 
 export function runGcloud(args: string[]): string {
   try {
-    return execSync(`gcloud ${args.join(' ')}`, {
+    return execFileSync('gcloud', args, {
       encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: 15000
     }).trim()
   } catch (err: any) {
     if (err.code === 'ENOENT') {

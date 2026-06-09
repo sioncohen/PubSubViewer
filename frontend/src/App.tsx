@@ -17,6 +17,7 @@ export default function App() {
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const seenIds = useRef<Set<string>>(new Set())
+  const activeSubRef = useRef<string | null>(null)
 
   useEffect(() => {
     fetchProject()
@@ -26,6 +27,13 @@ export default function App() {
     fetchSubscriptions()
       .then(({ subscriptions }) => setSubscriptions(subscriptions))
       .catch(err => setError(err.message))
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+    }
   }, [])
 
   function stopPolling() {
@@ -33,22 +41,27 @@ export default function App() {
       clearInterval(intervalRef.current)
       intervalRef.current = null
     }
+    activeSubRef.current = null
     setIsPolling(false)
   }
 
   function startPolling() {
     if (!selectedSubscription) return
+    activeSubRef.current = selectedSubscription
     setError(null)
     setIsPolling(true)
+    const sub = selectedSubscription
     intervalRef.current = setInterval(async () => {
       try {
-        const { messages: incoming } = await fetchMessages(selectedSubscription)
+        const { messages: incoming } = await fetchMessages(sub)
+        if (activeSubRef.current !== sub) return
         const unique = incoming.filter(m => !seenIds.current.has(m.messageId))
         unique.forEach(m => seenIds.current.add(m.messageId))
         if (unique.length > 0) {
           setMessages(prev => [...unique, ...prev].slice(0, MAX_MESSAGES))
         }
       } catch (err: any) {
+        if (activeSubRef.current !== sub) return
         setError(err.message)
         stopPolling()
       }
