@@ -1,20 +1,17 @@
 const { app, BrowserWindow } = require('electron')
 const http = require('http')
+const path = require('path')
 
-const DEV_URL = 'http://localhost:5173'
+const isDev = !app.isPackaged
 
-// Poll until the Vite dev server is accepting connections
-function waitForServer(url, maxAttempts = 30) {
+function waitForServer(port, maxAttempts = 30) {
   return new Promise((resolve, reject) => {
     const attempt = (n) => {
-      http.get(url, (res) => {
+      http.get(`http://localhost:${port}`, (res) => {
         res.resume()
         resolve()
       }).on('error', () => {
-        if (n <= 0) {
-          reject(new Error(`Dev server at ${url} did not start in time`))
-          return
-        }
+        if (n <= 0) return reject(new Error(`Server on port ${port} did not start in time`))
         setTimeout(() => attempt(n - 1), 1000)
       })
     }
@@ -32,12 +29,26 @@ function createWindow() {
       contextIsolation: true
     }
   })
-  win.loadURL(DEV_URL)
+
+  if (isDev) {
+    win.loadURL('http://localhost:5173')
+  } else {
+    win.loadFile(path.join(__dirname, '../frontend/dist/index.html'))
+  }
 }
 
 app.whenReady().then(async () => {
-  await waitForServer(DEV_URL)
+  if (isDev) {
+    // Dev: wait for Vite dev server
+    await waitForServer(5173)
+  } else {
+    // Prod: start Express backend in-process, then wait for it
+    require(path.join(__dirname, '../backend/dist/index.js'))
+    await waitForServer(3001)
+  }
+
   createWindow()
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })

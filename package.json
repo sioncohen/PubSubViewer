@@ -5,11 +5,30 @@
   "scripts": {
     "dev": "concurrently -n backend,frontend -c bgBlue,bgGreen \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
     "dev:electron": "concurrently -n backend,frontend,electron -c bgBlue,bgGreen,bgMagenta \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\" \"electron .\"",
+    "build:win": "npm --prefix backend run build && npm --prefix frontend run build && electron-builder --win",
     "install:all": "npm install && npm --prefix backend install && npm --prefix frontend install"
+  },
+  "build": {
+    "appId": "com.pubsubviewer.app",
+    "productName": "PubSub Viewer",
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true
+    },
+    "files": [
+      "electron/main.js",
+      "frontend/dist/**/*",
+      "backend/dist/**/*",
+      "backend/node_modules/**/*"
+    ]
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
     "electron": "^42.4.0",
+    "electron-builder": "^26.15.2",
     "electron-vite": "^5.0.0"
   }
 }

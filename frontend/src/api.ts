@@ -1,7 +1,10 @@
 import type { PubSubMessage } from './types'
 
+// When loaded from file:// (packaged Electron), Vite's proxy is gone — hit the backend directly
+const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:3001' : ''
+
 async function apiFetch<T>(path: string): Promise<T> {
-  const res = await fetch(`/api${path}`)
+  const res = await fetch(`${API_BASE}/api${path}`)
   const text = await res.text()
   let data: any
   try {
