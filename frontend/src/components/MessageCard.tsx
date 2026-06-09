@@ -11,7 +11,7 @@ export default function MessageCard({ message }: Props) {
     parsedData = JSON.parse(message.data)
     isJson = true
   } catch {
-    isJson = false
+    // isJson remains false
   }
 
   const hasAttributes = Object.keys(message.attributes).length > 0
