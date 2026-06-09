@@ -1,0 +1,11 @@
+{
+  "name": "pubsub-viewer",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n backend,frontend -c bgBlue,bgGreen \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
+    "install:all": "npm install && npm --prefix backend install && npm --prefix frontend install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
