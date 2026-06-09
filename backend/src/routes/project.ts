@@ -3,9 +3,9 @@ import { runGcloud } from '../gcloud'
 
 const router = Router()
 
-router.get('/', (_req, res) => {
+router.get('/', async (_req, res) => {
   try {
-    const project = runGcloud(['config', 'get-value', 'project'])
+    const project = await runGcloud(['config', 'get-value', 'project'])
     res.json({ project })
   } catch (err: any) {
     res.status(500).json({ error: err.message })

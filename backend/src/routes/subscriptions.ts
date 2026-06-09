@@ -7,9 +7,9 @@ interface GcloudSubscription {
   name: string
 }
 
-router.get('/', (_req, res) => {
+router.get('/', async (_req, res) => {
   try {
-    const output = runGcloud(['pubsub', 'subscriptions', 'list', '--format=json'])
+    const output = await runGcloud(['pubsub', 'subscriptions', 'list', '--format=json'])
     const raw: GcloudSubscription[] = output ? JSON.parse(output) : []
     const subscriptions = raw.map(s => s.name)
     res.json({ subscriptions })

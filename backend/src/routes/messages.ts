@@ -20,13 +20,13 @@ interface NormalizedMessage {
   attributes: Record<string, string>
 }
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const subscription = req.query.subscription as string
   if (!subscription) {
     return res.status(400).json({ error: 'subscription query param required' })
   }
   try {
-    const output = runGcloud([
+    const output = await runGcloud([
       'pubsub', 'subscriptions', 'pull', subscription,
       '--no-auto-ack',
       '--limit=10',
