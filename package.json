@@ -2,6 +2,8 @@
   "name": "pubsub-viewer",
   "private": true,
   "main": "electron/main.js",
+  "version": "0.0.1",
+  "author": "Sion Cohen",
   "scripts": {
     "dev": "concurrently -n backend,frontend -c bgBlue,bgGreen \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
     "dev:electron": "concurrently -n backend,frontend,electron -c bgBlue,bgGreen,bgMagenta \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\" \"electron .\"",
